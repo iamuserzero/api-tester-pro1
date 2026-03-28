@@ -1,0 +1,23 @@
+{
+  name api-tester-pro,
+  version 1.0.0,
+  description Postman-like API testing tool with BurpSuite proxy support,
+  main server.js,
+  scripts {
+    start node server.js,
+    dev nodemon server.js
+  },
+  dependencies {
+    express ^4.18.2,
+    axios ^1.6.0,
+    https-proxy-agent ^7.0.2,
+    http-proxy-agent ^7.0.0,
+    cors ^2.8.5,
+    body-parser ^1.20.2,
+    node-tunnel ^4.0.0,
+    tunnel ^0.0.6
+  },
+  devDependencies {
+    nodemon ^3.0.1
+  }
+}

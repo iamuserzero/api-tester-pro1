@@ -1,0 +1,48 @@
+version: '3.9'
+
+services:
+  api-tester:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-tester-pro
+    image: api-tester-pro:latest
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    volumes:
+      - api-tester-data:/app/data
+    networks:
+      - api-tester-net
+    labels:
+      - "com.api-tester.version=1.0.0"
+      - "com.api-tester.description=Postman-like API Tester with BurpSuite Proxy"
+
+  # ─────────────────────────────────────────────
+  # Optional: Nginx reverse proxy
+  # ─────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: api-tester-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - api-tester-net
+    depends_on:
+      - api-tester
+    profiles:
+      - nginx
+
+volumes:
+  api-tester-data:
+    driver: local
+
+networks:
+  api-tester-net:
+    driver: bridge

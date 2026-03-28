@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Tester Pro – Postman Alternative</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css"
+  />
+</head>
+<body>
+  <!-- ═══════════════════════════════════════════ -->
+  <!--  TOP NAV                                    -->
+  <!-- ═══════════════════════════════════════════ -->
+  <nav class="topnav">
+    <div class="topnav-left">
+      <span class="logo"><i class="fas fa-rocket"></i> API Tester Pro</span>
+    </div>
+    <div class="topnav-right">
+      <button class="btn-nav" onclick="showTab('main')" id="tab-main">
+        <i class="fas fa-paper-plane"></i> Request
+      </button>
+      <button class="btn-nav" onclick="showTab('collections')" id="tab-collections">
+        <i class="fas fa-folder"></i> Collections
+      </button>
+      <button class="btn-nav" onclick="showTab('environments')" id="tab-environments">
+        <i class="fas fa-cog"></i> Environments
+      </button>
+      <button class="btn-nav" onclick="showTab('proxy')" id="tab-proxy">
+        <i class="fas fa-shield-alt"></i> Proxy
+      </button>
+      <button class="btn-nav" onclick="showTab('history')" id="tab-history">
+        <i class="fas fa-history"></i> History
+      </button>
+      <button class="btn-nav btn-export" onclick="exportData()">
+        <i class="fas fa-download"></i> Export
+      </button>
+      <label class="btn-nav btn-import" for="importFile">
+        <i class="fas fa-upload"></i> Import
+      </label>
+      <input type="file" id="importFile" accept=".json" onchange="importData(event)" style="display:none" />
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!--  PROXY STATUS BAR                           -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="proxy-statusbar" id="proxyStatusBar">
+    <span id="proxyStatusText">
+      <i class="fas fa-circle" id="proxyStatusDot"></i>
+      Proxy: <b id="proxyStatusLabel">Disabled</b>
+    </span>
+    <span id="proxyStatusInfo"></span>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!--  MAIN LAYOUT                                -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="layout">
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <b><i class="fas fa-folder-open"></i> Collections</b>
+        <button class="btn-sm" onclick="quickAddCollection()">
+          <i class="fas fa-plus"></i>
+        </button>
+      </div>
+      <div id="sidebarCollections"></div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="content">
+      <!-- ─── TAB: MAIN REQUEST ─── -->
+      <section id="page-main" class="page active">
+        <div class="request-bar">
+          <select id="method" class="method-select">
+            <option value="GET" style="color:#61affe">GET</option>
+            <option value="POST" style="color:#49cc90">POST</option>
+            <option value="PUT" style="color:#fca130">PUT</option>
+            <option value="PATCH" style="color:#50e3c2">PATCH</option>
+            <option value="DELETE" style="color:#f93e3e">DELETE</option>
+            <option value="HEAD" style="color:#9012fe">HEAD</option>
+            <option value="OPTIONS" style="color:#0d5aa7">OPTIONS</option>
+          </select>
+          <input
+            type="text"
+            id="urlInput"
+            class="url-input"
+            placeholder="Enter request URL  (use {{variable}} for env vars)"
+            autocomplete="off"
+          />
+          <select id="activeEnv" class="env-select" onchange="loadEnvVars()">
+            <option value="">No Environment</option>
+          </select>
+          <button class="btn-send" onclick="sendRequest()">
+            <i class="fas fa-paper-plane"></i> Send
+          </button>
+          <button class="btn-save" onclick="showSaveDialog()">
+            <i class="fas fa-save"></i> Save
+          </button>
+        </div>
+
+        <!-- REQUEST TABS -->
+        <div class="req-tabs">
+          <button class="req-tab active" onclick="showReqTab('params')" id="rtab-params">
+            Params
+          </button>
+          <button class="req-tab" onclick="showReqTab('headers')" id="rtab-headers">
+            Headers <span class="badge" id="headerBadge">0</span>
+          </button>
+          <button class="req-tab" onclick="showReqTab('body')" id="rtab-body">
+            Body
+          </button>
+          <button class="req-tab" onclick="showReqTab('auth')" id="rtab-auth">
+            Auth
+          </button>
+          <button class="req-tab" onclick="showReqTab('pre-script')" id="rtab-pre-script">
+            Pre-Script
+          </button>
+          <button class="req-tab" onclick="showReqTab('tests')" id="rtab-tests">
+            Tests
+          </button>
+        </div>
+
+        <!-- PARAMS TAB -->
+        <div class="req-tab-content active" id="rtab-content-params">
+          <div class="kv-table-header">
+            <span>Query Parameters</span>
+            <button class="btn-sm" onclick="addParam()">
+              <i class="fas fa-plus"></i> Add
+            </button>
+          </div>
+          <div class="kv-table" id="paramsTable">
+            <div class="kv-row kv-header">
+              <div></div><div>Key</div><div>Value</div><div>Description</div><div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- HEADERS TAB -->
+        <div class="req-tab-content" id="rtab-content-headers">
+          <div class="kv-table-header">
+            <span>Request Headers</span>
+            <button class="btn-sm" onclick="addHeader()">
+              <i class="fas fa-plus"></i> Add
+            </button>
+          </div>
+          <div class="kv-table" id="headersTable">
+            <div class="kv-row kv-header">
+              <div></div><div>Key</div><div>Value</div><div>Description</div><div></div>
+            </div>
+          </div>
+          <div class="preset-headers">
+            <span>Presets:</span>
+            <button class="btn-preset" onclick="addPresetHeader('Content-Type','application/json')">JSON</button>
+            <button class="btn-preset" onclick="addPresetHeader('Content-Type','application/xml')">XML</button>
+            <button class="btn-preset" onclick="addPresetHeader('Accept','application/json')">Accept JSON</button>
+            <button class="btn-preset" onclick="addPresetHeader('Cache-Control','no-cache')">No-Cache</button>
+            <button class="btn-preset" onclick="addPresetHeader('User-Agent','APITesterPro/1.0')">User-Agent</button>
+          </div>
+        </div>
+
+        <!-- BODY TAB -->
+        <div class="req-tab-content" id="rtab-content-body">
+          <div class="body-types">
+            <label><input type="radio" name="bodyType" value="none" onchange="switchBodyType('none')" checked /> none</label>
+            <label><input type="radio" name="bodyType" value="json" onchange="switchBodyType('json')" /> JSON</label>
+            <label><input type="radio" name="bodyType" value="form-urlencoded" onchange="switchBodyType('form-urlencoded')" /> form-urlencoded</label>
+            <label><input type="radio" name="bodyType" value="raw" onchange="switchBodyType('raw')" /> raw</label>
+            <label><input type="radio" name="bodyType" value="xml" onchange="switchBodyType('xml')" /> XML</label>
+          </div>
+          <div id="bodyNone" class="body-panel">
+            <p class="hint">This request has no body.</p>
+          </div>
+          <div id="bodyJson" class="body-panel" style="display:none">
+            <div class="editor-toolbar">
+              <button class="btn-sm" onclick="formatJSON()"><i class="fas fa-magic"></i> Format</button>
+              <button class="btn-sm" onclick="minifyJSON()"><i class="fas fa-compress"></i> Minify</button>
+            </div>
+            <textarea id="bodyJsonInput" class="code-editor" placeholder='{"key": "value"}'></textarea>
+          </div>
+          <div id="bodyForm" class="body-panel" style="display:none">
+            <div class="kv-table-header">
+              <span>Form Data</span>
+              <button class="btn-sm" onclick="addFormField()"><i class="fas fa-plus"></i> Add</button>
+            </div>
+            <div class="kv-table" id="formTable">
+              <div class="kv-row kv-header">
+                <div></div><div>Key</div><div>Value</div><div></div>
+              </div>
+            </div>
+          </div>
+          <div id="bodyRaw" class="body-panel" style="display:none">
+            <textarea id="bodyRawInput" class="code-editor" placeholder="Raw body content..."></textarea>
+          </div>
+          <div id="bodyXml" class="body-panel" style="display:none">
+            <textarea id="bodyXmlInput" class="code-editor" placeholder="<root><element>value</element></root>"></textarea>
+          </div>
+        </div>
+
+        <!-- AUTH TAB -->
+        <div class="req-tab-content" id="rtab-content-auth">
+          <div class="auth-type-row">
+            <label>Auth Type:</label>
+            <select id="authType" onchange="switchAuthType()">
+              <option value="none">None</option>
+              <option value="bearer">Bearer Token</option>
+              <option value="basic">Basic Auth</option>
+              <option value="apikey">API Key</option>
+            </select>
+          </div>
+          <div id="authNone"><p class="hint">No authentication.</p></div>
+          <div id="authBearer" style="display:none">
+            <label>Token</label>
+            <input type="text" id="bearerToken" class="full-input" placeholder="Enter Bearer Token" />
+          </div>
+          <div id="authBasic" style="display:none">
+            <label>Username</label>
+            <input type="text" id="basicUsername" class="full-input" placeholder="Username" />
+            <label>Password</label>
+            <input type="password" id="basicPassword" class="full-input" placeholder="Password" />
+          </div>
+          <div id="authApiKey" style="display:none">
+            <label>Key Name</label>
+            <input type="text" id="apiKeyName" class="full-input" placeholder="X-API-Key" />
+            <label>Key Value</label>
+            <input type="text" id="apiKeyValue" class="full-input" placeholder="your-api-key" />
+            <label>Add to</label>
+            <select id="apiKeyAddTo" class="full-input">
+              <option value="header">Header</option>
+              <option value="query">Query Param</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- PRE-SCRIPT TAB -->
+        <div class="req-tab-content" id="rtab-content-pre-script">
+          <p class="hint">Write JavaScript to run before the request.</p>
+          <textarea id="preScript" class="code-editor" placeholder="// pm.environment.set('token', 'abc123');
+// pm.request.headers.add({key: 'X-Custom', value: 'test'});"></textarea>
+        </div>
+
+        <!-- TESTS TAB -->
+        <div class="req-tab-content" id="rtab-content-tests">
+          <p class="hint">Write test assertions.</p>
+          <textarea id="testScript" class="code-editor" placeholder="// pm.test('Status is 200', () => pm.expect(pm.response.status).to.equal(200));"></textarea>
+          <div id="testResults" class="test-results"></div>
+        </div>
+
+        <!-- ── RESPONSE AREA ── -->
+        <div class="response-area" id="responseArea" style="display:none">
+          <div class="response-meta">
+            <span class="status-badge" id="statusBadge"></span>
+            <span class="meta-item"><i class="fas fa-clock"></i> <span id="respTime"></span></span>
+            <span class="meta-item"><i class="fas fa-database"></i> <span id="respSize"></span></span>
+            <span class="meta-item proxied-badge" id="proxiedBadge" style="display:none">
+              <i class="fas fa-shield-alt"></i> Via BurpSuite
+            </span>
+            <div class="resp-tab-btns">
+              <button class="resp-tab-btn active" onclick="showRespTab('body')" id="resptab-body">Body</button>
+              <button class="resp-tab-btn" onclick="showRespTab('headers')" id="resptab-headers">Headers</button>
+              <button class="resp-tab-btn" onclick="showRespTab('cookies')" id="resptab-cookies">Cookies</button>
+              <button class="resp-tab-btn" onclick="showRespTab('raw')" id="resptab-raw">Raw</button>
+            </div>
+            <button class="btn-sm" onclick="copyResponse()"><i class="fas fa-copy"></i> Copy</button>
+          </div>
+
+          <div id="resp-content-body" class="resp-tab-content active">
+            <div class="resp-view-btns">
+              <button class="btn-sm" onclick="setRespView('pretty')" id="respview-pretty">Pretty</button>
+              <button class="btn-sm" onclick="setRespView('raw')" id="respview-raw">Raw</button>
+            </div>
+            <pre id="responseBody" class="response-body hljs"></pre>
+          </div>
+          <div id="resp-content-headers" class="resp-tab-content">
+            <table class="resp-headers-table" id="respHeadersTable"></table>
+          </div>
+          <div id="resp-content-cookies" class="resp-tab-content">
+            <div id="respCookies"></div>
+          </div>
+          <div id="resp-content-raw" class="resp-tab-content">
+            <pre id="responseRaw" class="response-body"></pre>
+          </div>
+        </div>
+
+        <div class="loading-overlay" id="loadingOverlay" style="display:none">
+          <div class="spinner"></div>
+          <span>Sending request...</span>
+        </div>
+      </section>
+
+      <!-- ─── TAB: COLLECTIONS ─── -->
+      <section id="page-collections" class="page">
+        <div class="page-header">
+          <h2><i class="fas fa-folder"></i> Collections</h2>
+          <button class="btn-primary" onclick="createCollection()">
+            <i class="fas fa-plus"></i> New Collection
+          </button>
+        </div>
+        <div id="collectionsView"></div>
+      </section>
+
+      <!-- ─── TAB: ENVIRONMENTS ─── -->
+      <section id="page-environments" class="page">
+        <div class="page-header">
+          <h2><i class="fas fa-cog"></i> Environments</h2>
+          <button class="btn-primary" onclick="createEnvironment()">
+            <i class="fas fa-plus"></i> New Environment
+          </button>
+        </div>
+        <div id="environmentsView"></div>
+      </section>
+
+      <!-- ─── TAB: PROXY ─── -->
+      <section id="page-proxy" class="page">
+        <div class="page-header">
+          <h2><i class="fas fa-shield-alt"></i> BurpSuite Proxy Configuration</h2>
+        </div>
+        <div class="proxy-card">
+          <div class="proxy-enable-row">
+            <label class="toggle-label">
+              <input type="checkbox" id="proxyEnabled" onchange="toggleProxy()" />
+              <span class="toggle-slider"></span>
+              Enable Proxy (Route traffic through BurpSuite)
+            </label>
+          </div>
+          <div class="proxy-fields" id="proxyFields">
+            <div class="proxy-field-row">
+              <div class="field-group">
+                <label>Protocol</label>
+                <select id="proxyProtocol" class="proxy-input">
+                  <option value="http">HTTP</option>
+                  <option value="https">HTTPS</option>
+                </select>
+              </div>
+              <div class="field-group flex-grow">
+                <label>Proxy Host</label>
+                <input type="text" id="proxyHost" class="proxy-input" value="127.0.0.1" placeholder="127.0.0.1" />
+              </div>
+              <div class="field-group">
+                <label>Proxy Port</label>
+                <input type="number" id="proxyPort" class="proxy-input" value="8080" placeholder="8080" />
+              </div>
+            </div>
+            <div class="proxy-field-row">
+              <label class="checkbox-label">
+                <input type="checkbox" id="bypassSSL" checked />
+                Bypass SSL Certificate Verification (recommended for BurpSuite)
+              </label>
+            </div>
+            <button class="btn-primary" onclick="saveProxyConfig()">
+              <i class="fas fa-save"></i> Save Proxy Config
+            </button>
+          </div>
+          <div class="proxy-info-box">
+            <h3><i class="fas fa-info-circle"></i> BurpSuite Setup Guide</h3>
+            <ol>
+              <li>Open BurpSuite → <b>Proxy</b> → <b>Options</b></li>
+              <li>Ensure listener is on <code>127.0.0.1:8080</code> (or your port)</li>
+              <li>Enable "Intercept" in the Proxy tab to capture requests</li>
+              <li>Import BurpSuite CA certificate to avoid SSL errors</li>
+              <li>Enable proxy above and click <b>Send</b> — requests will appear in BurpSuite</li>
+            </ol>
+            <div class="burp-commands">
+              <h4>Quick BurpSuite CA Certificate Import:</h4>
+              <code>curl -x http://127.0.0.1:8080 http://burp/cert -o burp_ca.der</code>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── TAB: HISTORY ─── -->
+      <section id="page-history" class="page">
+        <div class="page-header">
+          <h2><i class="fas fa-history"></i> Request History</h2>
+          <button class="btn-danger" onclick="clearHistory()">
+            <i class="fas fa-trash"></i> Clear
+          </button>
+        </div>
+        <div id="historyView"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!--  MODALS                                     -->
+  <!-- ═══════════════════════════════════════════ -->
+
+  <!-- Save Request Modal -->
+  <div class="modal-overlay" id="saveModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3><i class="fas fa-save"></i> Save Request</h3>
+        <button class="modal-close" onclick="closeModal('saveModal')">×</button>
+      </div>
+      <div class="modal-body">
+        <label>Request Name</label>
+        <input type="text" id="saveRequestName" class="full-input" placeholder="My Request" />
+        <label>Collection</label>
+        <select id="saveCollection" class="full-input">
+          <option value="">— Select Collection —</option>
+        </select>
+        <button class="btn-sm" onclick="createCollectionFromSave()">
+          <i class="fas fa-plus"></i> New Collection
+        </button>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" onclick="saveRequest()">Save</button>
+        <button class="btn-secondary" onclick="closeModal('saveModal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Collection Modal -->
+  <div class="modal-overlay" id="newCollectionModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3><i class="fas fa-folder-plus"></i> New Collection</h3>
+        <button class="modal-close" onclick="closeModal('newCollectionModal')">×</button>
+      </div>
+      <div class="modal-body">
+        <label>Collection Name</label>
+        <input type="text" id="newCollectionName" class="full-input" placeholder="My Collection" />
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" onclick="saveNewCollection()">Create</button>
+        <button class="btn-secondary" onclick="closeModal('newCollectionModal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Environment Modal -->
+  <div class="modal-overlay" id="newEnvModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3><i class="fas fa-cog"></i> Environment Editor</h3>
+        <button class="modal-close" onclick="closeModal('newEnvModal')">×</button>
+      </div>
+      <div class="modal-body">
+        <label>Environment Name</label>
+        <input type="text" id="newEnvName" class="full-input" placeholder="Production / Staging / Dev" />
+        <div class="env-vars-header">
+          <span>Variables</span>
+          <button class="btn-sm" onclick="addEnvVar()"><i class="fas fa-plus"></i> Add Variable</button>
+        </div>
+        <div class="kv-table" id="envVarsTable">
+          <div class="kv-row kv-header">
+            <div>Variable</div><div>Value</div><div>Secret</div><div></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" onclick="saveEnvironment()">Save</button>
+        <button class="btn-secondary" onclick="closeModal('newEnvModal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
